@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Beautiful Book</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #ffd1dc 0%, #ffb3d9 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+        .book-cover-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            perspective: 1000px;
+            height: 600px;
+        }
+        .book-cover {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        .book-cover.opened {
+            transform: rotateY(-180deg);
+        }
+        .cover-front, .cover-back {
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            color: white;
+            text-align: center;
+            padding: 40px;
+            font-size: 48px;
+            font-weight: bold;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .cover-front {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ff8fab 50%, #ffa4c4 100%);
+            z-index: 2;
+        }
+        .cover-back {
+            background: linear-gradient(135deg, #ffa4c4 0%, #ffb3d9 50%, #ffc0e0 100%);
+            transform: rotateY(180deg);
+            z-index: 1;
+        }
+        .cover-front::before, .cover-back::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), transparent 50%);
+            pointer-events: none;
+            border-radius: 15px;
+        }
+        .cover-text {
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .cover-subtitle {
+            font-size: 18px;
+            margin-top: 20px;
+            opacity: 0.9;
+        }
+        .click-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            opacity: 0.8;
+            animation: bounce 2s infinite;
+            z-index: 10;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+        .book-content {
+            display: none;
+            width: 100%;
+        }
+        .book-content.active {
+            display: block;
+        }
+        .book-pages {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            min-height: 600px;
+            perspective: 1000px;
+        }
+        .page-left, .page-right {
+            flex: 1;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            overflow: hidden;
+        }
+        .page-left {
+            background: #fff9fb;
+            border-right: 2px solid #ffe0ec;
+        }
+        .page-right {
+            background: white;
+        }
+        .page-right.flip-out {
+            transform: rotateY(180deg);
+        }
+        .page-left.flip-in {
+            transform: rotateY(0deg);
+        }
+        .page-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #333;
+            flex: 1;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+        .page-text p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        .page-number {
+            margin-top: auto;
+            font-size: 14px;
+            color: #999;
+            padding-top: 20px;
+            text-align: center;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            gap: 20px;
+        }
+        .btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            color: white;
+        }
+        .btn-prev {
+            background: linear-gradient(135deg, #ff8fab, #ff6b9d);
+        }
+        .btn-prev:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ff6b9d, #ff5a8a);
+            transform: translateX(-5px);
+        }
+        .btn-next {
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+        }
+        .btn-next:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ff5a8a, #ff6b9d);
+            transform: translateX(5px);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .page-info {
+            text-align: center;
+            color: #666;
+            font-weight: bold;
+        }
+        .music-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .music-toggle:hover {
+            transform: scale(1.1);
+        }
+        .music-toggle.playing {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .shayari-btn {
+            padding: 10px 25px;
+            font-size: 14px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #ff8fab, #ff6b9d);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            font-weight: bold;
+            align-self: flex-start;
+        }
+
+        .shayari-btn:hover {
+            background: linear-gradient(135deg, #ff6b9d, #ff5a8a);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #fff5f9 0%, #ffe0ec 100%);
+            padding: 50px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            color: #ff6b9d;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-content p {
+            color: #333;
+            font-size: 16px;
+            line-height: 2;
+            margin: 20px 0;
+            font-style: italic;
+            letter-spacing: 0.5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            text-align: left;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b9d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: none;
+            border: none;
+        }
+
+        .close-btn:hover {
+            color: #ff5a8a;
+            transform: scale(1.2);
+        }
+        /* ===== Special Links Section ===== */
+.special-links {
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff0f6, #ffe0ec);
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(255, 107, 157, 0.2);
+}
+
+.special-links h3 {
+    color: #ff6b9d;
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.special-links a {
+    display: block;
+    margin: 10px 0;
+    padding: 12px;
+    border-radius: 25px;
+    background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.special-links a:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #ff5a8a, #ff6b9d);
+    box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Book Cover -->
+        <div class="book-cover-container">
+            <div class="book-cover" id="bookCover">
+                <div class="cover-front">
+                    <div class="cover-text">
+                        📖
+                        <div>A Beautiful Story</div>
+                    </div>
+                    <div class="cover-subtitle">Open to Read</div>
+                    <div class="click-hint">Click to Open</div>
+                </div>
+                <div class="cover-back">
+                    <div style="font-size: 24px;">✨</div>
+                    <div style="margin-top: 20px;">Turn to Begin</div>
+                </div>
+            </div>
+        </div>
+        <!-- Book Content -->
+        <div class="book-content" id="bookContent">
+            <div class="book-pages" id="bookPages">
+                <div class="page-left" id="pageLeft">
+                    <div class="page-text" id="pageTextLeft"></div>
+                    <div class="page-number">Page <span id="leftPageNum">1</span></div>
+                </div>
+                <div class="page-right" id="pageRight">
+                    <div class="page-text" id="pageTextRight"></div>
+                    <div class="page-number">Page <span id="rightPageNum">2</span></div>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-prev" id="prevBtn" onclick="prevPage()">← Previous</button>
+                <div class="page-info">
+                    Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+                </div>
+                <button class="btn btn-next" id="nextBtn" onclick="nextPage()">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shayari Modal -->
+    <div class="modal" id="shayariModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeShayari()">&times;</button>
+            <h2>💕 Shayari 💕</h2>
+            <p id="shayariText"></p>
+        </div>
+    </div>
+
+    <!-- Music Toggle Button -->
+    <button class="music-toggle" id="musicToggle" onclick="toggleMusic()">🎵</button>
+    <!-- Audio Element -->
+    <audio id="bgMusic" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
+    <script>
+        const shayariContent = `Ek Ladki Meri Dost Hai 💖
+
+Ek ladki meri dost hai,
+Jo dil ke bohot kareeb hai.
+Dekho to lage kuch aur si,
+Par naseeb mein sirf dosti hi likha hai.
+
+Thodi si zyada khaas hai woh,
+Mohabbat se bhi gehri uski baat hai.
+Sabse pehle wahi samajh leti hai,
+Jaise mere dil ka raaz usi ke paas hai.
+
+Khush ho jaata hoon jab usse dekhta hoon,
+Woh pehle hi chehra padh leti hai mera.
+Zakhm chahe kitna bhi gehra ho,
+Marham ban jaati hai woh mera.
+
+Dard ki har dava ban jaati hai,
+Yaadon ki mehfil ka sukoon bhi woh hi.
+Paas baith jaaye to aise lage,
+Jaise kisi ne dil ko samajh liya ho kabhi.
+
+Woh door ho jaaye to lagta hai,
+Khuda bhi thoda sa rooth gaya.
+Uski kami kuch is tarah mehsoos hoti hai,
+Jaise dil se noor hi chala gaya.
+
+Kabhi-kabhi bohot sata deta hoon use, 
+Shayad dil bhi tod deta hoon anjane mein. 
+maafi v mang leta hu usse 
+kiu q darta hu mein uske rone se
+Fikr hoti hai bohot zyada uski,
+Isliye hamesha pooch leta hoon—
+Ghar pahunchi ya nahi?
+Khaana sahi se khayi ya nahi?
+Haan gussa mujh par karti hai woh,
+Par kabhi dikhati nahi.
+
+Bohot hi pyaari hai woh…
+Usse main aise kaise rooth jaaun? 
+Pyaar jo karta hu usse..
+Ek hi darr rehta hai mera—
+Kahin kho na doon use .
+
+Taarif uski karu to lafz kam pad jaate hain,
+Kabhi mazaak mein chhed bhi deta hoon use,
+Par uske bina dil bechain sa rehta hai,
+Jaise woh hi har pal ki aadat ban gayi ho meri.
+
+Sab kuch hai woh mere liye—
+Dua bhi, khushi bhi, rab ki rehmat bhi.
+Aaj ke zamaane mein kahan milti hai,
+Aisi dosti?
+
+Ek ladki meri dost hai,
+Jo dil ke…  💫`;
+
+        const fullText = `Hey Sayani, its been a while we spoke. Ok I’ve been thinking for a while about what to say , and this is not something written in a hurry – it comes from reflection…
+Our journey… we shared even just as friends genuinely matter to me. It wasn’t only about projects or exams, but about the experiences around them.  
+I remember what we did, how it felt — supporting each other and caring without expecting anything in return. I remember explaining the project to you and I also want to say this clearly — I really really appreciate your efforts. The way you tried, learned, took notes, asked questions, and pushed through panic and stress which is something meaningful. What you did was real work, and it deserves appreciation. No matter what how much panic was there you alone fight it back I saw it and I appreciate it. 
+I still clearly remember 4th December. You were panicking a lot, and we fixed things together step by step. I could see how anxious you were, and staying there with you felt natural to me — leaving wasn’t an option.
+Even the next day, I observed how much you were still panicking inside. I stood beside you the whole time, supporting you quietly. When you finally showed your project and I saw that smile on your face, something inside me felt calm. Seeing you relieved made me feel relieved too. When you were panicking, I was stressed as well — I just never showed it.
+Do you remember the day I gifted you the sketches of you. That day, when you so the sketches I saw how your innocent smile on your face and you I felt really amazing to see you happy.
+Do you remember the day we gave the Teacher’s Day gift and the vase accidentally broke? You had put so much love and effort into making those gifts, carrying the gifts and when it broke, it felt like I had broken your hard work and your feelings. I could see the hurt in your eyes, and that hurt came because of me. That’s why I couldn’t bring myself to approach you; I didn’t know how to face you. You should ask Devang what he saw in me that day the part of me I never knew how to show you.
+I bought another vase and we gave it to madam the next day—not just to replace what was broken, but because I truly respect your efforts and everything you had put into it. 
+I still remember on the day when you felt panicked and had difficulty breathing. I kept asking, “Are you okay? Let me carry your bag,” because I was really worried about you. Even then, you chose to carry it yourself. I don’t know if you noticed it or not, but that day I truly showed how much I care about you.
+And on day we gave gifts, you gave me a keychain. You may not know this, but it matters to me more than I can explain — because you were the first person among all my friends who ever gave me a gift. I still carry it with me everywhere. For me, losing it would feel like losing a part of my life. For me, it was more than enough. Though one day I accidentally lost it, I kept searching for it. And when I finally found it, I realized I wasn’t just afraid of losing a keychain—I was afraid of losing something that came from you.
+I still remember the day you gave me jalebis. They weren’t just good—they felt special because they came from you.
+And when I gave you a return gift—a container filled with cookies and a small note—you may not know this, but that was the first time I ever wrote something like that for someone. I wrote it from my heart.
+In that note, I meant every word when I said that no matter what happens, I will always be there for you—to support you and help you whenever you need.
+Even that day for first time I ever made something for someone with my own hands was for you — the chowmein. I had never done that for anyone before. It wasn’t about the food; it was about the intention. I wanted to do something from my side that showed care and effort. That moment mattered to me more than you may realize.
+I was genuinely happy, because through that small gesture, I was able to make you feel happy.
+Even whenever you were really sick, I was genuinely scared and deeply worried about you. I couldn’t stop thinking about you, and I even prayed to God for you to get well again. Seeing you in pain affected me more than I can explain
+I still remember the night we worked together on the project. You stayed awake, sharing code with me, not sleeping at all just because I was working on it. Even though your doctor had advised you to sleep early and take care of your health, you still stayed up for me. I truly appreciate you and all the effort and care you put in for me.
+I still remember the day you were feeling anxious, and I made a website for you to cheer you up that you are not alone and you can do it and indeed you did it. When I shared it with you I heard your happy voice on the meet, it meant everything to me—because you truly matter to me. Here’s the link: https://jrrity.github.io/happy/
+Still remember the day we fought over something so small like, and how heavy my heart felt afterward. To make things right, I made you a little website—something simple, but filled with all my feelings. I still remember your reaction, and how it quietly healed me.
+I still remember the day I wrote a shayari for you, put emotions into words . And there’s another shayari too—one I wrote only for you, but never had the courage to show you. 
+[SHAYARI_MARKER]
+And you know why I act protective—it’s because you matter to me. That’s why, in college, I would tell you to eat this or that, something healthy, so you wouldn’t fall sick. I cared about you so much that I’d ask you to message me once you reached home because im worried about you… khair, you never really did.
+For me, these were the things—just small efforts I made for you. But those small efforts carry everything I feel: how deeply I care about you, how much I respect you, and how much I love you. And those moments mattered deeply, and they’ll stay with me.
+And you know you helped me too—more than you know. When I was really down, you motivated me and lifted me up. Every time you understood me, every time you encouraged me, those moments became a part of me, and I can never forget them. Encourage me to take care of my health , take medicine on time. 
+You listened and understood all my stories and stood by me, supporting me every step of the way.
+Sometimes I feel like I owe you more than I could ever express.
+But I don’t know what changed between us. The strong friendship we had built slowly started to fall apart, almost as if something unwanted came in between. It felt like I was losing someone truly special to me. I feel like I hurt you, like the trust we shared may have been affected because of me. Sometimes I can’t help but think that things ended because of my mistakes. I want you to know that I tried to fix those mistakes and improve myself—not out of desperation, but because I never want to lose someone as genuinely special to me as you are. And yes, I miss the little things too—like those messages where you used to say, “ki re uthli.” Whenever I woke up in the morning, your text used to heal me in ways you might not even realize. I also understand that some things change, and I truly respect that.
+And you know, this friendship has taught me so much—more than I can ever fully express. It taught me patience, how to stay calm when someone else is anxious. It taught me responsibility, how to support someone without expecting anything in return. It gave me confidence, and it showed me the importance of respecting someone’s comfort, boundaries, and timing. But what touched me most was what I learned about myself: how deeply I can care, how much loyalty truly matters to me, and how much it means to be there for someone when they need it the most.
+I respect you—your dreams, your choices, your boundaries, and the beautiful person you are. This friendship has left a mark on my heart that I will carry with me always, and I will never forget the way it has shaped me.
+Everything I ever did for you was never about getting anything in return—there were no expectations, no pressure, and no hidden motives. I did those things simply because it felt right in the moment: to be there, to offer support, and to stand steady when life felt overwhelming.
+Over time, I realized that my feelings for you had grown into something more than friendship. I care about you deeply, and it comes from genuinely wanting to support you, celebrate your strengths, and be there through everything you face. I know what you’ve been going through, and I feel the weight of what’s in your heart. I know that because you’re aware of my feelings for you, there are times when you don’t respond much to my messages —whether they’re small jokes to make you laugh or words meant to show I care. Maybe it’s because you don’t want me to get too attached, that’s completely okay, and I respect it. I say these things not to get a reaction, but simply because I want to be there for you in whatever small way I can, and because you genuinely matter to me.
+No matter what the future holds, I want you to know that I will always remember this chapter with gratitude and warmth, never with regret. Even if our college days end for us, the memories, the lessons, and the moments we shared will always stay with me.
+I genuinely wish you peace, good health, confidence, and happiness in whatever path you choose next. I hope you always believe in yourself the way you learned to during those stressful moments — because you are capable.
+And one last thing—please never think that you can’t do something. For me, you did everything beautifully. Whether it was on hackathon day, the projects you worked on, the gifts you made, or every new thing you learned, you always gave your best—often better than me and everyone else.
+I am truly proud of you. I always believed in you, just the way you believed in me. You matter to me more than you may realize, and I am deeply grateful to have you. I love you.
+Thank you — for the experiences, the effort, the lessons, and the memories.
+Valo thakis. And happy new year.`;
+
+        let currentPageIndex = 0;
+        const maxLinesPerPage = 20;
+        let pageLines = [];
+        let totalPages = 0;
+        let isPlaying = false;
+        let shayariPageIndex = -1;
+        
+        const bgMusic = document.getElementById('bgMusic');
+        const musicToggle = document.getElementById('musicToggle');
+        const pageLeft = document.getElementById('pageLeft');
+        const pageRight = document.getElementById('pageRight');
+        
+        function toggleMusic() {
+            if (isPlaying) {
+                bgMusic.pause();
+                isPlaying = false;
+                musicToggle.classList.remove('playing');
+            } else {
+                bgMusic.play();
+                isPlaying = true;
+                musicToggle.classList.add('playing');
+            }
+        }
+
+        function openShayari() {
+            document.getElementById('shayariText').textContent = shayariContent;
+            document.getElementById('shayariModal').classList.add('show');
+        }
+
+        function closeShayari() {
+            document.getElementById('shayariModal').classList.remove('show');
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('shayariModal');
+            if (event.target == modal) {
+                modal.classList.remove('show');
+            }
+        }
+        
+        function initializePages() {
+
+    // ✅ Auto-convert URLs to clickable links FIRST
+    const text = fullText.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank">$1</a>'
+    );
+
+    let allLines = [];
+    const lines = text.split('\n');
+
+    lines.forEach(line => {
+
+        if (line.includes('[SHAYARI_MARKER]')) {
+    allLines.push('__SHAYARI_BUTTON__');
+    return;
+}
+
+
+        if (!line.trim()) {
+            allLines.push('');
+            return;
+        }
+
+        // ✅ DO NOT BREAK HTML TAGS
+        if (line.includes('<a ')) {
+            allLines.push(line.trim());
+            return;
+        }
+
+        const words = line.trim().split(/\s+/);
+        let currentLine = '';
+
+        words.forEach(word => {
+            if ((currentLine + ' ' + word).length > 60) {
+                allLines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine += (currentLine ? ' ' : '') + word;
+            }
+        });
+
+        if (currentLine) allLines.push(currentLine);
+    });
+
+    pageLines = [];
+    for (let i = 0; i < allLines.length; i += maxLinesPerPage) {
+        pageLines.push(allLines.slice(i, i + maxLinesPerPage));
+    }
+
+    totalPages = Math.ceil(pageLines.length / 2);
+    document.getElementById('totalPages').textContent = totalPages;
+    displayPage();
+}
+
+        function displayPage() {
+    if (pageLines.length === 0) return;
+
+    const leftPageIndex = currentPageIndex * 2;
+    const rightPageIndex = leftPageIndex + 1;
+
+    // Clear flip classes (UNCHANGED)
+    pageLeft.classList.remove('flip-out');
+    pageRight.classList.remove('flip-out');
+
+    /* ========= LEFT PAGE ========= */
+    let leftHTML = '';
+
+    if (leftPageIndex < pageLines.length) {
+        leftHTML = pageLines[leftPageIndex]
+            .map(line => {
+                if (line === '__SHAYARI_BUTTON__') {
+                    return '<button class="shayari-btn" onclick="openShayari()">💕 Read Shayari 💕</button>';
+                }
+                return line;
+            })
+            .join('<br>');
+    }
+
+    document.getElementById('pageTextLeft').innerHTML = leftHTML;
+
+    /* ========= RIGHT PAGE ========= */
+    let rightHTML = '';
+
+    if (rightPageIndex < pageLines.length) {
+        rightHTML = pageLines[rightPageIndex]
+            .map(line => {
+                if (line === '__SHAYARI_BUTTON__') {
+                    return '<button class="shayari-btn" onclick="openShayari()">💕 Read Shayari 💕</button>';
+                }
+                return line;
+            })
+            .join('<br>');
+    }
+
+    // ⭐ Special links ONLY on last RIGHT page (UNCHANGED)
+    if (currentPageIndex === totalPages - 1) {
+        rightHTML += '<br><br>' + getSpecialLinksHTML();
+    }
+
+    document.getElementById('pageTextRight').innerHTML = rightHTML;
+
+    /* ========= PAGE NUMBERS (UNCHANGED) ========= */
+    document.getElementById('leftPageNum').textContent = leftPageIndex + 1;
+    document.getElementById('rightPageNum').textContent = rightPageIndex + 1;
+    document.getElementById('currentPage').textContent = currentPageIndex + 1;
+
+    updateButtons(); // UNCHANGED
+}
+
+        
+        function nextPage() {
+            if (currentPageIndex < totalPages - 1) {
+                pageRight.classList.add('flip-out');
+                
+                setTimeout(() => {
+                    currentPageIndex++;
+                    displayPage();
+                }, 400);
+            }
+        }
+        
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                pageLeft.classList.add('flip-out');
+                
+                setTimeout(() => {
+                    currentPageIndex--;
+                    displayPage();
+                }, 400);
+            }
+        }
+        
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentPageIndex === 0;
+            document.getElementById('nextBtn').disabled = currentPageIndex === totalPages - 1;
+        }
+        
+        document.getElementById('bookCover').addEventListener('click', function() {
+            this.classList.add('opened');
+            
+            setTimeout(() => {
+                document.querySelector('.book-cover-container').style.display = 'none';
+                document.getElementById('bookContent').classList.add('active');
+                initializePages();
+                
+                if (!isPlaying) {
+                    bgMusic.play();
+                    isPlaying = true;
+                    musicToggle.classList.add('playing');
+                }
+            }, 400);
+        });
+        
+        updateButtons();
+        function getSpecialLinksHTML() {
+    return `
+        <div class="special-links">
+            <h3>💖 Some Special Links 💖</h3>
+            <a href="https://jrrity.github.io/bestie/" target="_blank">🌸 Bestie</a>
+            <a href="https://jrrity.github.io/happy/" target="_blank">😊 My cutie</a>
+            <a href="https://jrrity.github.io/bear/" target="_blank">🧸 Bear</a>
+            <a href="https://jrrity.github.io/flower/" target="_blank">🌷 Flower</a>
+            <p style="margin-top:12px; font-size:13px; color:#555;">
+                Made with care, memories, and emotions ✨
+            </p>
+        </div>
+    `;
+}
+
+    </script>
+</body>
+</html>
