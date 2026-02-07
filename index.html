@@ -9,7 +9,13 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        }.photo-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 25px;
+      animation: float 4s ease-in-out infinite;
+    }
+
         body {
             font-family: 'Georgia', serif;
             background: linear-gradient(135deg, #ffd1dc 0%, #ffb3d9 100%);
@@ -395,6 +401,9 @@
             </div>
         </div>
         <!-- Book Content -->
+        <div class="photo-wrapper">
+      <img src="sayani.jpeg" alt="Sayani" class="photo">
+    </div>
         <div class="book-content" id="bookContent">
             <div class="book-pages" id="bookPages">
                 <div class="page-left" id="pageLeft">
@@ -715,6 +724,7 @@ Here a little last shayari for you.
     </script>
 </body>
 </html>
+
 
 
 
